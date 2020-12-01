@@ -6,20 +6,25 @@ let input = readLines "Day01.txt" |> Seq.map int |> Seq.toList
 
 let targetValue = 2020
 
-let findSumPair inputList value =
-    if List.contains (targetValue - value) inputList
-    then Some (targetValue -  value, value)
-    else None
+let findSumPair target input =
+    List.allPairs input input
+    |> List.find (fun (a, b) -> a + b = target)
 
-let findPair input =
-    input |> List.pick (findSumPair input)
+let multiplyPair (a, b) = a * b
 
-let multiplyPair pair =
-    printfn "%A" pair
-    fst pair * snd pair
+let solveA = findSumPair targetValue >> multiplyPair
 
-let solveA input = findPair input |> multiplyPair
+let allTriples l1 l2 l3 =
+    List.allPairs l2 l3
+    |> List.allPairs l1
+    |> List.map (fun (a, (b, c)) -> a, b, c)
 
-let solveB input = "Solution to B"
+let findSumTriple target input =
+    allTriples input input input
+    |> List.find (fun (a, b, c) -> a + b + c = target)
 
-let solve input = solveDay solveA solveB input
+let multiplyTriple (a, b, c) = a * b * c
+
+let solveB = findSumTriple targetValue >> multiplyTriple
+
+let solve = solveDay solveA solveB
