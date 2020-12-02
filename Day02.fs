@@ -12,16 +12,16 @@ type PasswordAndPolicy = { Password: string; Policy: Policy }
 let input = readLines "Day02.txt"
 
 let parsePolicy policyString: Policy =
-    let splitRangeAndLetter = policyString |> splitBy ' '
-    let splitRange = splitRangeAndLetter.[0] |> splitBy '-'
-    { Letter = splitRangeAndLetter.[1].[0]
-      MinOccurences = splitRange.[0] |> int
-      MaxOccurences = splitRange.[1] |> int }
+    let range, letter = policyString |> splitBy ' ' |> unpack2
+    let rangeMin, rangeMax = range |> splitBy '-' |> unpack2
+    { Letter = Seq.head letter;
+      MinOccurences = rangeMin |> int;
+      MaxOccurences = rangeMax |> int; }
 
 let parseInputLine inputLine: PasswordAndPolicy =
-    let splitByColon = inputLine |> splitBy ':'
-    { Password = splitByColon.[1]
-      Policy = parsePolicy splitByColon.[0] }
+    let policy, password = inputLine |> splitBy ':' |> unpack2
+    { Password = password
+      Policy = parsePolicy policy }
 
 let isPasswordValid passwordAndPolicy =
     let occurences =

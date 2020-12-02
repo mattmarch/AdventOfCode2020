@@ -24,3 +24,7 @@ let getPartFromArgs arguments =
             | args when Array.contains "b" args -> B
             | _ -> Both
     
+let unpack2 l =
+  match l with
+  | [a; b] -> a, b
+  | _ -> failwithf "Tried to unpack2 list without exactly 2 elements: %A" l
