@@ -7,7 +7,8 @@ type PartToSolve = A | B | Both
 let readLines path: string seq = File.ReadLines(path)
 let readAll path = File.ReadAllText(path)
 
-let splitBy (separator: char[]) (inputString: string): string list = inputString.Split separator |> Array.toList
+let splitBy (separator: char) (inputString: string): string list = 
+  inputString.Split [|separator|] |> Array.toList
 
 let toLower (str: string) = str.ToLower()
 
