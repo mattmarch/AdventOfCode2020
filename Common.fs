@@ -29,7 +29,7 @@ let unpack2 l =
   | [a; b] -> a, b
   | _ -> failwithf "Tried to unpack2 list without exactly 2 elements: %A" l
 
-let productOfList (input: int list): bigint =
+let bigintProductOfInts (input: int list): bigint =
   input
   |> List.map bigint
   |> List.reduce (*)
