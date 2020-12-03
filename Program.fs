@@ -1,10 +1,12 @@
 ﻿
 let solveDay day part = 
-  match day with
-    | "1" -> Day01.solve Day01.input part
-    | "2" -> Day02.solve Day02.input part
-    | "3" -> Day03.solve Day03.input part
-    | _ -> printfn "Input doesn't seem to match any days solved days"
+  let solveFunction =
+    match day with
+    | "1" -> Day01.solve Day01.input
+    | "2" -> Day02.solve Day02.input
+    | "3" -> Day03.solve Day03.input
+    | _ -> failwithf "Input doesn't seem to match any days solved days"
+  solveFunction part
 
 
 [<EntryPoint>]
