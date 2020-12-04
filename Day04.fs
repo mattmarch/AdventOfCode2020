@@ -23,9 +23,6 @@ let solveA =
     >> List.filter hasRequiredFields
     >> List.length
 
-let valueInRange (rangeStart, rangeEnd) value =
-    value >= rangeStart && value <= rangeEnd
-
 let validateHeight (height: string) =
     let unitStartPos = Seq.length height - 2
     let unit = height.[unitStartPos ..]
@@ -35,11 +32,14 @@ let validateHeight (height: string) =
     | "in" -> value |> int |> valueInRange (59, 76)
     | _ -> false
 
+let isValidColourDigit (c: char) =
+    let charAsInt = int c
+    valueInRange (48, 57) charAsInt || valueInRange (97, 102) charAsInt
+
 let validateHairColour (hairColour: string) =
-    Seq.head hairColour = '#' 
-    && Seq.tail hairColour 
-        |> Seq.map int
-        |> Seq.forall (fun c -> valueInRange (48, 57) c || valueInRange (97, 102) c)
+    Seq.head hairColour = '#'
+    && Seq.length hairColour = 7 
+    && Seq.tail hairColour |> Seq.forall isValidColourDigit
 
 let validEyeColours = ["amb"; "blu"; "brn"; "gry"; "grn"; "hzl"; "oth"]
 
@@ -50,10 +50,9 @@ let validatePassportField (name, value) =
     | "eyr" -> value |> int |> valueInRange (2020, 2030)
     | "hgt" -> validateHeight value
     | "hcl" -> validateHairColour value
-    | "ecl" -> validEyeColours |> List.exists (fun item -> item = value)
+    | "ecl" -> validEyeColours |> List.contains value
     | "pid" -> Seq.length value = 9 && isNumber value
     | _ -> true
-
 
 let solveB =
     List.map parseLine

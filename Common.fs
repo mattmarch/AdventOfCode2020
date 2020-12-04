@@ -42,3 +42,5 @@ let bigintProductOfInts: int list -> bigint =
 let isNumber (s: string) =
     Int32.TryParse s |> fst
     
+let valueInRange (rangeStart, rangeEnd) value =
+    value >= rangeStart && value <= rangeEnd
