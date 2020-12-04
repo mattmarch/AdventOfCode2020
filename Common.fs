@@ -1,5 +1,6 @@
 module Common
 
+open System
 open System.IO
 
 type PartToSolve = A | B | Both
@@ -9,6 +10,12 @@ let readAll path = File.ReadAllText(path)
 
 let splitBy (separator: char) (inputString: string): string list = 
   inputString.Split [|separator|] |> Array.toList
+
+let splitByString (separator: string) (inputString: string): string list = 
+  inputString.Split([|separator|], StringSplitOptions.None) |> Array.toList
+
+let replaceString (beforeSubstr: string) (afterSubstr: string) (input: string) =
+  input.Replace(beforeSubstr, afterSubstr)
 
 let toLower (str: string) = str.ToLower()
 
@@ -31,3 +38,7 @@ let unpack2 l =
 
 let bigintProductOfInts: int list -> bigint =
   List.map bigint >> List.reduce (*)
+
+let isNumber (s: string) =
+    Int32.TryParse s |> fst
+    
