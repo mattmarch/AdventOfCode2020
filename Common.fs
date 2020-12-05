@@ -44,3 +44,5 @@ let isNumber (s: string) =
     
 let valueInRange (rangeStart, rangeEnd) value =
     value >= rangeStart && value <= rangeEnd
+
+let binaryToInt input = Convert.ToInt32(input, 2)
