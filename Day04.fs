@@ -23,41 +23,27 @@ let solveA =
     >> List.filter hasRequiredFields
     >> List.length
 
-let validateHeight (height: string) =
-    let unitStartPos = Seq.length height - 2
-    let unit = height.[unitStartPos ..]
-    let value = height.[.. unitStartPos - 1]
-    match unit with
-    | "cm" -> value |> int |> valueInRange (150, 193) 
-    | "in" -> value |> int |> valueInRange (59, 76)
-    | _ -> false
-
-let isValidColourDigit (c: char) =
-    let charAsInt = int c
-    valueInRange (48, 57) charAsInt || valueInRange (97, 102) charAsInt
-
-let validateHairColour (hairColour: string) =
-    Seq.head hairColour = '#'
-    && Seq.length hairColour = 7 
-    && Seq.tail hairColour |> Seq.forall isValidColourDigit
-
 let validEyeColours = ["amb"; "blu"; "brn"; "gry"; "grn"; "hzl"; "oth"]
 
 let validatePassportField (name, value) =
-    match name with
-    | "byr" -> value |> int |> valueInRange (1920, 2002)
-    | "iyr" -> value |> int |> valueInRange (2010, 2020)
-    | "eyr" -> value |> int |> valueInRange (2020, 2030)
-    | "hgt" -> validateHeight value
-    | "hcl" -> validateHairColour value
-    | "ecl" -> validEyeColours |> List.contains value
-    | "pid" -> Seq.length value = 9 && isNumber value
-    | _ -> true
+    match name, value with
+    | "byr", Integer birthYear                          -> valueInRange (1920, 2002) birthYear
+    | "iyr", Integer issueYear                          -> valueInRange (2010, 2020) issueYear
+    | "eyr", Integer expiryYear                         -> valueInRange (2020, 2030) expiryYear
+    | "hgt", ParseRegex @"(\d*)cm" [ Integer cm ]       -> cm >= 150 && cm <= 193
+    | "hgt", ParseRegex @"(\d*)in" [ Integer inches ]   -> inches >= 59 && inches <= 76
+    | "hcl", ParseRegex "#[a-f0-9]{6}" _                -> true
+    | "ecl", eyeColour                                  -> List.contains eyeColour validEyeColours
+    | "pid", ParseRegex "[0-9]{9}" _                    -> true
+    | "cid", _                                          -> true
+    | _                                                 -> false
+
+let validatePassport = List.forall validatePassportField
 
 let solveB =
     List.map parseLine
     >> List.filter hasRequiredFields
-    >> List.filter (List.forall validatePassportField)
+    >> List.filter validatePassport
     >> List.length
 
 let solve = solveDay solveA solveB

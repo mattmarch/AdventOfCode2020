@@ -2,6 +2,7 @@ module Common
 
 open System
 open System.IO
+open System.Text.RegularExpressions
 
 type PartToSolve = A | B | Both
 
@@ -46,3 +47,14 @@ let valueInRange (rangeStart, rangeEnd) value =
     value >= rangeStart && value <= rangeEnd
 
 let binaryToInt input = Convert.ToInt32(input, 2)
+
+let (|ParseRegex|_|) regex str =
+   let m = Regex(regex).Match(str)
+   if m.Success
+   then Some (List.tail [ for x in m.Groups -> x.Value ])
+   else None
+
+let (|Integer|_|) (str: string) =
+  match Int32.TryParse str with
+  | true, value -> Some value
+  | false, _ -> None
