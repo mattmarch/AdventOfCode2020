@@ -1,7 +1,6 @@
 module Day05
 
 open Common
-open System
 
 let input = readLines "Day05.txt"
 
@@ -32,6 +31,5 @@ let solveB: string seq -> int =
   >> Seq.map (Array.toList >> unpack2)
   >> Seq.pick (fun (a, b) -> if b - a = 2 then Some (a + 1) else None)
 
-
-
-let solve: string seq -> PartToSolve -> Unit = solveDay solveA solveB
+let solve: string seq -> PartToSolve -> Unit = 
+  solveDay solveA solveB
