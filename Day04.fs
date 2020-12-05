@@ -30,8 +30,8 @@ let validatePassportField (name, value) =
     | "byr", Integer birthYear                          -> valueInRange (1920, 2002) birthYear
     | "iyr", Integer issueYear                          -> valueInRange (2010, 2020) issueYear
     | "eyr", Integer expiryYear                         -> valueInRange (2020, 2030) expiryYear
-    | "hgt", ParseRegex @"(\d*)cm" [ Integer cm ]       -> cm >= 150 && cm <= 193
-    | "hgt", ParseRegex @"(\d*)in" [ Integer inches ]   -> inches >= 59 && inches <= 76
+    | "hgt", ParseRegex @"(\d*)cm" [ Integer cm ]       -> valueInRange (150, 193) cm
+    | "hgt", ParseRegex @"(\d*)in" [ Integer inches ]   -> valueInRange (59, 76) inches
     | "hcl", ParseRegex "#[a-f0-9]{6}" _                -> true
     | "ecl", eyeColour                                  -> List.contains eyeColour validEyeColours
     | "pid", ParseRegex "^[0-9]{9}$" _                  -> true
