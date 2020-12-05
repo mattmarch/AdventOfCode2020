@@ -24,8 +24,7 @@ let solveA: string seq -> int =
   >> Seq.max
 
 let solveB: string seq -> int =
-  Seq.map (parseLine)
-  >> Seq.map calculateSeatId
+  Seq.map (parseLine >> calculateSeatId)
   >> Seq.sort
   >> Seq.windowed 2
   >> Seq.map (Array.toList >> unpack2)
