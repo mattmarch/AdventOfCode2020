@@ -34,7 +34,7 @@ let validatePassportField (name, value) =
     | "hgt", ParseRegex @"(\d*)in" [ Integer inches ]   -> inches >= 59 && inches <= 76
     | "hcl", ParseRegex "#[a-f0-9]{6}" _                -> true
     | "ecl", eyeColour                                  -> List.contains eyeColour validEyeColours
-    | "pid", ParseRegex "^[0-9]{9}$" _                    -> true
+    | "pid", ParseRegex "^[0-9]{9}$" _                  -> true
     | "cid", _                                          -> true
     | _                                                 -> false
 
