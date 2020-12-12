@@ -53,11 +53,11 @@ let parseLine (line: string) =
   | _ -> failwithf "Invalid action %s" line
 
 let moveStateForward state amount =
-  match state.CWTurnsFromEast % 4 with
+  match positiveModulo state.CWTurnsFromEast 4 with
   | 0 -> {state with X = state.X + amount}
-  | 1 | -3 -> {state with Y = state.Y - amount}
-  | 2 | -2 -> {state with X = state.X - amount}
-  | 3 | -1 -> {state with Y = state.Y + amount}
+  | 1 -> {state with Y = state.Y - amount}
+  | 2 -> {state with X = state.X - amount}
+  | 3 -> {state with Y = state.Y + amount}
   | _ -> failwithf "Something has gone very wrong with the modulo operator"
 
 let updateState state action =

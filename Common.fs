@@ -58,3 +58,5 @@ let (|Integer|_|) (str: string) =
   match Int32.TryParse str with
   | true, value -> Some value
   | false, _ -> None
+
+let positiveModulo value divisor = (value + divisor) % divisor
