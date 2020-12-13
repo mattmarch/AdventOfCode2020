@@ -43,7 +43,7 @@ let chineseRemainderTheoremSolver (input: (int64*int64) list) =
     input
     |> List.zip3 y z
     |> List.sumBy (fun (yi, zi, (ai, _)) -> ai * yi * zi)
-  (nonLowestSolution) % productN + productN
+  positiveModuloInt64 nonLowestSolution productN
 
 let solveB (_, busIds) =
   busIds

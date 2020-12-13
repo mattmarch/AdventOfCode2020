@@ -59,4 +59,12 @@ let (|Integer|_|) (str: string) =
   | true, value -> Some value
   | false, _ -> None
 
-let positiveModulo value divisor = (value + divisor) % divisor
+let positiveModulo value divisor = 
+  match value % divisor with
+  | positiveResult when positiveResult >= 0 -> positiveResult
+  | negativeResult -> divisor + negativeResult
+
+let positiveModuloInt64 value divisor = 
+  match value % divisor with
+  | positiveResult when positiveResult >= 0L -> positiveResult
+  | negativeResult -> divisor + negativeResult
