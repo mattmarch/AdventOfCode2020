@@ -48,6 +48,8 @@ let valueInRange (rangeStart, rangeEnd) value =
 
 let binaryToInt input = Convert.ToInt32(input, 2)
 
+let binaryToInt64 input = Convert.ToInt64(input, 2)
+
 let (|ParseRegex|_|) regex str =
    let m = Regex(regex).Match(str)
    if m.Success
@@ -56,6 +58,11 @@ let (|ParseRegex|_|) regex str =
 
 let (|Integer|_|) (str: string) =
   match Int32.TryParse str with
+  | true, value -> Some value
+  | false, _ -> None
+
+let (|Long|_|) (str: string) =
+  match Int64.TryParse str with
   | true, value -> Some value
   | false, _ -> None
 
