@@ -39,37 +39,37 @@ let solveA input =
     |> Map.toList
     |> List.sumBy snd
 
-let allCombinations lst =
-    let rec comb accLst elemLst =
-        match elemLst with
-        | h::t ->
-            let next = [h]::List.map (fun el -> h::el) accLst @ accLst
-            comb next t
-        | _ -> accLst
-    comb [] lst
+let rec applyBitmaskOptions bitsToChange address =
+    let bitToChange = Seq.head bitsToChange
+    let nextBits = Seq.tail bitsToChange
+    let withBitNegative = address &&& ~~~ (1L <<< bitToChange)
+    let withBitPositive = address ||| (1L <<< bitToChange)
+    match nextBits with
+    | nextBitsToChange when Seq.isEmpty nextBitsToChange -> [withBitNegative; withBitPositive]
+    | _ -> List.concat [
+        applyBitmaskOptions nextBits withBitNegative;
+        applyBitmaskOptions nextBits withBitPositive;
+        ]
 
-let getBitmaskPermutations (bitmask: string) =
+let applyAllBitmaskOptionsToAddress (bitmask: string) (address: int64) =
     let baseBitmask = bitmask |> replaceString "X" "0" |> binaryToInt64
-    let changedBitmasks =
+    let baseTransformedAddress = address ||| baseBitmask
+    let floatingBits =
         bitmask
         |> Seq.rev
-        |> Seq.toList
-        |> List.indexed
-        |> List.filter (fun (_, c) -> c = 'X')
-        |> List.map (fun (i, _) -> 1L <<< i)
-        |> allCombinations
-        |> List.map (List.reduce (|||) >> ((|||) baseBitmask))
-    baseBitmask :: changedBitmasks
-    
+        |> Seq.indexed
+        |> Seq.filter (fun (_, c) -> c = 'X')
+        |> Seq.map fst
+    applyBitmaskOptions floatingBits baseTransformedAddress
 
-let updateMemoryAtAllPositions (bitmasks: int64 list) (memory: Map<int64, int64>) (address: int64) (value: int64) =
-    bitmasks
-    |> List.fold (fun mem bitmask -> mem |> Map.add (bitmask ||| address) value) memory
+let updateMemoryAtAllPositions (bitmask: string) (memory: Map<int64, int64>) (address: int64) (value: int64) =
+    applyAllBitmaskOptionsToAddress bitmask address
+    |> List.fold (fun mem address -> mem |> Map.add address value) memory
 
-let instructionFolderB (bitmask: int64 list, memory: Map<int64, int64>) line =
+let instructionFolderB (bitmask: string, memory: Map<int64, int64>) line =
     let lineStart, value = line |> splitByString " = " |> unpack2
     match lineStart with
-    | "mask" -> (getBitmaskPermutations value, memory)
+    | "mask" -> (value, memory)
     | ParseRegex @"mem\[([0-9]+)\]" [ Long address ] -> 
                 (bitmask, updateMemoryAtAllPositions bitmask memory address (value |> int64))
     | _ -> failwithf "Invalid instruction line: %s" line
@@ -77,10 +77,12 @@ let instructionFolderB (bitmask: int64 list, memory: Map<int64, int64>) line =
 let solveB input =
     let (_, memory) =
         input
-        |> Seq.fold instructionFolderB ([], Map.empty)
+        |> Seq.fold instructionFolderB ("", Map.empty)
     memory
     |> Map.toList
     |> List.sumBy snd
+
+let solve: string seq -> PartToSolve -> Unit = solveDay solveA solveB
 
 let testInput = [
     "mask = 000000000000000000000000000000X1001X"
