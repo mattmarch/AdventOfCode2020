@@ -16,7 +16,7 @@ let separateLastElementAndIndex input =
     let precedingValues = input.[0..(lastElementIndex - 1)]
     precedingValues, lastElementValue, lastElementIndex
 
-let rec getNumberAtIndex indexToFind startingNumbers =
+let getNumberAtIndex indexToFind startingNumbers =
     let allButLastStartingNumbers, lastStartingNumber, lastStartingNumberIndex = 
         separateLastElementAndIndex startingNumbers
     let rec getValuesRecursive (previousNumbers: Map<int, int>) lastIndex lastValue =
