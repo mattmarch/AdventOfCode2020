@@ -15,7 +15,6 @@ let separateLastElementAndIndex input =
     let lastElementValue = List.last input
     let precedingValues = input.[0..(lastElementIndex - 1)]
     precedingValues, lastElementValue, lastElementIndex
-    
 
 let rec getNumberAtIndex indexToFind startingNumbers =
     let allButLastStartingNumbers, lastStartingNumber, lastStartingNumberIndex = 
