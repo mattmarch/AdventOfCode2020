@@ -83,6 +83,10 @@ let solveA input =
     parsedInput.OtherTickets
     |> List.sumBy (getErrorRateForTicket parsedInput.RulesForFields)
 
+let ticketIsValid rulesForFields (ticket: TicketDetails) =
+    ticket
+    |> List.forall (valueValidForAnyFields rulesForFields)
+
 let getIndexesRuleIsValidFor rule ticket =
     ticket
     |> List.indexed
@@ -122,7 +126,7 @@ let solveB input =
     let parsedInput = parseInput input
     let validTickets =
         parsedInput.OtherTickets
-        |> List.filter (getErrorRateForTicket parsedInput.RulesForFields >> ((=) 0))
+        |> List.filter (ticketIsValid parsedInput.RulesForFields)
     let rulesAndPossibleIndices =
         parsedInput.RulesForFields
         |> List.map (fun r -> r, getIndexesRuleIsValidForInAllTickets validTickets r)
