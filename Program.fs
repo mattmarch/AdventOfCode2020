@@ -17,6 +17,7 @@ let solveDay day part =
     | "13" -> Day13.solve Day13.input
     | "14" -> Day14.solve Day14.input
     | "15" -> Day15.solve Day15.input
+    | "16" -> Day16.solve Day16.input
     | _ -> failwithf "Input doesn't seem to match any days solved days"
   solveFunction part
 

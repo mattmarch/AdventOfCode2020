@@ -37,6 +37,11 @@ let unpack2 l =
   | [a; b] -> a, b
   | _ -> failwithf "Tried to unpack2 list without exactly 2 elements: %A" l
 
+let unpack3 l = 
+  match l with
+  | [a; b; c] -> a, b, c
+  | _ -> failwithf "Tried to upack3 list without exactly 3 elements %A" l
+
 let bigintProductOfInts: int list -> bigint =
   List.map bigint >> List.reduce (*)
 
