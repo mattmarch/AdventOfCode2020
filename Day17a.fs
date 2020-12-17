@@ -57,12 +57,14 @@ let runCubeCycle startState xRange yRange zRange =
     |> Seq.map (fun coord -> coord, getNextCubeState startState coord)
     |> Map.ofSeq
 
-let rec applyCycles cyclesRemaining startState (xMin, xMax) (yMin, yMax) (zMin, zMax) =
-    let nextState = runCubeCycle startState (xMin, xMax) (yMin, yMax) (zMin, zMax)
+let expand (rangeStart, rangeEnd) = (rangeStart - 1, rangeEnd + 1)
+
+let rec applyCycles cyclesRemaining startState xRange yRange zRange =
+    let nextState = runCubeCycle startState xRange yRange zRange
     if cyclesRemaining = 1 then
         nextState
     else
-        applyCycles (cyclesRemaining - 1) nextState (xMin-1, xMax+1) (yMin-1, yMax+1) (zMin-1, zMax+1)
+        applyCycles (cyclesRemaining - 1) nextState (expand xRange) (expand yRange) (expand zRange)
 
 let solveA input =
     let inputLength = Seq.length input
