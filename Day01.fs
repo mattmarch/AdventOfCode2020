@@ -14,11 +14,6 @@ let multiplyPair (a, b) = a * b
 
 let solveA = findSumPair targetValue >> multiplyPair
 
-let allTriples l1 l2 l3 =
-    List.allPairs l2 l3
-    |> List.allPairs l1
-    |> List.map (fun (a, (b, c)) -> a, b, c)
-
 let findSumTriple target input =
     allTriples input input input
     |> List.find (fun (a, b, c) -> a + b + c = target)

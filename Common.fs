@@ -80,3 +80,8 @@ let positiveModuloInt64 value divisor =
   match value % divisor with
   | positiveResult when positiveResult >= 0L -> positiveResult
   | negativeResult -> divisor + negativeResult
+
+let allTriples l1 l2 l3 =
+    List.allPairs l2 l3
+    |> List.allPairs l1
+    |> List.map (fun (a, (b, c)) -> a, b, c)
