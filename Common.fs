@@ -85,3 +85,5 @@ let allTriples l1 l2 l3 =
     List.allPairs l2 l3
     |> List.allPairs l1
     |> List.map (fun (a, (b, c)) -> a, b, c)
+
+let joinStrings (strings: string list) = String.Concat(strings)
