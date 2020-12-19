@@ -3,7 +3,7 @@ module Day18
 open Common
 
 type Token =
-    | Number of int
+    | Number of int64
     | Add
     | Multiply
     | OpenParen
@@ -17,7 +17,7 @@ let input = readLines "Day18.txt"
 
 let parseCharacter (c: char) =
     match string c with
-    | Integer i -> Number i
+    | Long i -> Number i
     | "+" -> Add
     | "*" -> Multiply
     | "(" -> OpenParen
@@ -44,7 +44,7 @@ type Action =
     | Multiplication
     | None
 
-let initialSolveExpressionFolderState = (0, Start)
+let initialSolveExpressionFolderState = (0L, Start)
 
 let rec solveExpressionFolder (total, action) (nextToken: TokenOrNestedTokens) =
     let unnestedNext: Token =
@@ -78,9 +78,53 @@ let solveExpression (expression: Token list) =
 let solveA input =
     input
     |> parseInput
-    |> Seq.sumBy (solveExpression >> int64)
+    |> Seq.sumBy (solveExpression)
 
-let solveB input = ""
+let addToLastElement tokens value =
+    let lastElement = 
+        match List.last tokens with
+        | Token (Number n) -> n
+        | invalid -> failwithf "Expected last element to be number, was: %A" invalid
+    let listLength = List.length tokens
+    tokens.[0..listLength - 2] @ [Token (Number (lastElement + value))]
+
+let initialApplyAdditionsFolderState = ([], Start)
+
+let rec applyAdditionsFolder (previousTokens, action) (nextToken: TokenOrNestedTokens) =
+    let unnestedNext: Token =
+        match nextToken with
+        | NestedTokens nested ->
+            Number
+                (nested
+                 |> List.rev
+                 |> List.fold applyAdditionsFolder initialApplyAdditionsFolderState
+                 |> fst
+                 |> List.fold solveExpressionFolder initialSolveExpressionFolderState
+                 |> fst)
+        | Token t -> t
+    match action, unnestedNext with
+    | Start, Number n -> (previousTokens @ [Token (Number n)], None)
+    | Addition, Number n -> (addToLastElement previousTokens n, None)
+    | Multiplication, token -> (previousTokens @ [Token token], None)
+    | None, Add -> (previousTokens, Addition)
+    | None, Multiply -> (previousTokens @ [Token Multiply], Multiplication)
+    | action, OpenParen -> (previousTokens, action)
+    | action, CloseParen -> (previousTokens, action)
+    | _ -> failwithf "Unexpected token combinations %A" (action, unnestedNext)
+
+let solveExpressionB (expression: Token list) =
+    expression
+    |> List.fold nestExpressionsFolder []
+    |> List.rev
+    |> List.fold applyAdditionsFolder initialApplyAdditionsFolderState
+    |> fst
+    |> List.fold solveExpressionFolder initialSolveExpressionFolderState
+    |> fst
+
+let solveB input =
+    input
+    |> parseInput
+    |> Seq.sumBy(solveExpressionB)
 
 let solve input = solveDay solveA solveB input
 
