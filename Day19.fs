@@ -57,39 +57,66 @@ let solveA input =
   |> List.filter (fun message -> List.contains message allValidMessages)
   |> List.length
 
-let generateValidMessagesForRuleWithRecursion (ruleSet: RuleSet) maxDepth ruleNumber: string list =
-  let rec generateMessages recursionDepth ruleNumber =
-    let nextRecursionDepth = 
-      match ruleNumber with
-      | 8 -> recursionDepth + 1
-      | 11 -> maxDepth
-      | _ -> recursionDepth
-    if nextRecursionDepth > maxDepth then
-      []
+let rec removeNestedRule8 nestedOptions replaceWith message =
+  let foundSubstring =
+    nestedOptions
+    |> List.tryFind (fun ruleSubstring -> message |> stringContains ruleSubstring)
+  match foundSubstring with
+  | Some substring -> 
+      removeNestedRule8 nestedOptions replaceWith (message |> replaceString substring replaceWith)
+  | None -> message
+
+let tryRemoveRule11NestingOption allPossible message (beforeString, afterString) =
+  match tryStringIndexOf beforeString message, tryStringIndexOf afterString message with
+  | Some beforeIndex, Some afterIndex when beforeIndex > afterIndex -> None
+  | Some beforeIndex, Some afterIndex ->
+    let startIndex = beforeIndex + Seq.length beforeString
+    let containedMessage = 
+      message 
+      |> Seq.skip startIndex
+      |> Seq.take (afterIndex - beforeIndex)
+      |> joinChars
+    if allPossible |> List.contains containedMessage then
+      Some (message |> replaceString containedMessage "")
     else
-      match ruleSet |> Map.find ruleNumber with
-      | SingleCharacter c -> [string c]
-      | SubRules subRules -> 
-          subRules 
-          |> List.collect (fun subRules ->
-                              subRules
-                              |> List.map (generateMessages nextRecursionDepth)
-                              |> List.reduce joinStringMessagePartOptions
-                              )
-  generateMessages 0 ruleNumber
+      None
+  | _ -> None
+
+let removeNestedRule11 (nestedOptions: (string * string) list) message =
+  let allPossibleStrings = nestedOptions |> List.map (fun (s1, s2) -> s1 + s2)
+  let rec removeNestingIfPossible message =
+    match nestedOptions |> List.tryPick (tryRemoveRule11NestingOption allPossibleStrings message) with
+    | Some reducedString -> removeNestingIfPossible reducedString
+    | None -> message
+  removeNestingIfPossible message
+
 
 let solveB input =
-  let originalRulesSet = input |> fst |> parseRules
-  let rulesSet = 
-    originalRulesSet
-    |> Map.add 8 (SubRules [[42]; [42; 8]])
-    |> Map.add 11 (SubRules [[42; 31]; [42; 11; 31]])
-  let allValidMessages = generateValidMessagesForRuleWithRecursion rulesSet 3 0
-  printf "List of possible messages generated"
-  input
-  |> snd
-  |> List.filter (fun message -> List.contains message allValidMessages)
-  |> List.length
+  let rulesSet = input |> fst |> parseRules
+  let allValidMessages = generateValidMessagesForRule rulesSet 0
+  let invalidByOriginalRules =
+    input
+    |> snd
+    |> List.filter (fun message -> not (List.contains message allValidMessages))
+  let rule42Possibilities = generateValidMessagesForRule rulesSet 42
+  let rule8NestedOptions =
+    List.allPairs rule42Possibilities rule42Possibilities
+    |> List.map (fun (s1, s2) -> s1 + s2)
+  let rule31Possibilities = generateValidMessagesForRule rulesSet 31
+  let rule11NestedOptions =
+    List.allPairs rule42Possibilities rule31Possibilities
+  let updatedInvalidMessages =
+    invalidByOriginalRules
+    |> List.map (
+      removeNestedRule8 rule8NestedOptions (List.head rule42Possibilities)
+      >> removeNestedRule11 rule11NestedOptions
+      )
+  let newInvalidCount =
+    updatedInvalidMessages
+    |> List.filter (fun message -> not (List.contains message allValidMessages))
+    |> List.length
+  (input |> snd |> List.length) - newInvalidCount
+  
   
 let solve = solveDay solveA solveB
 

@@ -87,3 +87,13 @@ let allTriples l1 l2 l3 =
     |> List.map (fun (a, (b, c)) -> a, b, c)
 
 let joinStrings (strings: string list) = String.Concat(strings)
+
+let joinChars (chars: char seq) = String.Concat(chars)
+
+let stringContains (substring: string) (inputString: string) = 
+  inputString.Contains(substring)
+
+let tryStringIndexOf (substring: string) (inputString: string) =
+  match inputString.IndexOf(substring) with
+  | -1 -> None
+  | positiveValue -> Some positiveValue
