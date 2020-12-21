@@ -97,3 +97,9 @@ let tryStringIndexOf (substring: string) (inputString: string) =
   match inputString.IndexOf(substring) with
   | -1 -> None
   | positiveValue -> Some positiveValue
+
+let tryRemovePrefix (message: string) (prefix: string) =
+  if message.StartsWith prefix then
+    Some (message.Substring(prefix.Length))
+  else
+    None

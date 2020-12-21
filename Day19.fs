@@ -57,66 +57,23 @@ let solveA input =
   |> List.filter (fun message -> List.contains message allValidMessages)
   |> List.length
 
-let rec removeNestedRule8 nestedOptions replaceWith message =
-  let foundSubstring =
-    nestedOptions
-    |> List.tryFind (fun ruleSubstring -> message |> stringContains ruleSubstring)
-  match foundSubstring with
-  | Some substring -> 
-      removeNestedRule8 nestedOptions replaceWith (message |> replaceString substring replaceWith)
-  | None -> message
-
-let tryRemoveRule11NestingOption allPossible message (beforeString, afterString) =
-  match tryStringIndexOf beforeString message, tryStringIndexOf afterString message with
-  | Some beforeIndex, Some afterIndex when beforeIndex > afterIndex -> None
-  | Some beforeIndex, Some afterIndex ->
-    let startIndex = beforeIndex + Seq.length beforeString
-    let containedMessage = 
-      message 
-      |> Seq.skip startIndex
-      |> Seq.take (afterIndex - beforeIndex)
-      |> joinChars
-    if allPossible |> List.contains containedMessage then
-      Some (message |> replaceString containedMessage "")
-    else
-      None
-  | _ -> None
-
-let removeNestedRule11 (nestedOptions: (string * string) list) message =
-  let allPossibleStrings = nestedOptions |> List.map (fun (s1, s2) -> s1 + s2)
-  let rec removeNestingIfPossible message =
-    match nestedOptions |> List.tryPick (tryRemoveRule11NestingOption allPossibleStrings message) with
-    | Some reducedString -> removeNestingIfPossible reducedString
-    | None -> message
-  removeNestingIfPossible message
-
+let matchesRules42And31 rule42Possibilities rule31Possibilities message =
+  let rec countOccurrencesAndReduceMessage possibilities message count =
+    match possibilities |> List.tryPick (tryRemovePrefix message) with
+    | Some reducedMessage -> countOccurrencesAndReduceMessage possibilities reducedMessage (count + 1)
+    | None -> count, message
+  let rule42Count, messageWithoutRule42 = countOccurrencesAndReduceMessage rule42Possibilities message 0
+  let rule31Count, remainingMessage = countOccurrencesAndReduceMessage rule31Possibilities messageWithoutRule42 0
+  rule31Count >= 1 && rule42Count > rule31Count && remainingMessage = ""
 
 let solveB input =
   let rulesSet = input |> fst |> parseRules
-  let allValidMessages = generateValidMessagesForRule rulesSet 0
-  let invalidByOriginalRules =
-    input
-    |> snd
-    |> List.filter (fun message -> not (List.contains message allValidMessages))
   let rule42Possibilities = generateValidMessagesForRule rulesSet 42
-  let rule8NestedOptions =
-    List.allPairs rule42Possibilities rule42Possibilities
-    |> List.map (fun (s1, s2) -> s1 + s2)
   let rule31Possibilities = generateValidMessagesForRule rulesSet 31
-  let rule11NestedOptions =
-    List.allPairs rule42Possibilities rule31Possibilities
-  let updatedInvalidMessages =
-    invalidByOriginalRules
-    |> List.map (
-      removeNestedRule8 rule8NestedOptions (List.head rule42Possibilities)
-      >> removeNestedRule11 rule11NestedOptions
-      )
-  let newInvalidCount =
-    updatedInvalidMessages
-    |> List.filter (fun message -> not (List.contains message allValidMessages))
-    |> List.length
-  (input |> snd |> List.length) - newInvalidCount
-  
+  let messages = input |> snd
+  messages
+  |> List.filter (matchesRules42And31 rule42Possibilities rule31Possibilities)
+  |> List.length
   
 let solve = solveDay solveA solveB
 
