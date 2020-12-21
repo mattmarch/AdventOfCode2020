@@ -140,23 +140,47 @@ let buildGrid tileList =
   }
   let initialGrid = 
     Map.ofList [(firstTile, initialPosition)]
-  let initialPlacedTiles = [firstTile.Id]
-  let rec placeNeighboursRecursively (grid: Map<Tile, GridPosition>) placedTiles tile tilePosition =
-    findNeighbourTiles tileList tile
-    |> List.filter (fun (_, matchedEdge) -> not (List.contains matchedEdge.TileId placedTiles))
-    |> List.map (fun (side, matchedEdge) -> 
-        (
-          findTileByTileId tileList matchedEdge.TileId,
-          getNeighbourGridPosition tilePosition side matchedEdge
-        )
-    )
-    |> List.fold (fun grid (tile, position) -> placeNeighboursRecursively grid (tile.Id :: placedTiles) tile position) grid
-  placeNeighboursRecursively initialGrid initialPlacedTiles firstTile initialPosition
+  let rec placeNeighboursRecursively (grid: Map<Tile, GridPosition>) tile tilePosition =
+    let placedTiles =
+      grid
+      |> Map.toList
+      |> List.map (fun (tile, _) -> tile.Id)
+    let neighbours =
+      findNeighbourTiles tileList tile
+      |> List.filter (fun (_, matchedEdge) -> not (placedTiles |> List.contains matchedEdge.TileId))
+      |> List.map (fun (side, matchedEdge) -> 
+          (
+            findTileByTileId tileList matchedEdge.TileId,
+            getNeighbourGridPosition tilePosition side matchedEdge
+          )
+      )
+    let gridWithNeighbours =
+      neighbours
+      |> List.fold (fun grid (tile, position) -> grid |> Map.add tile position) grid
+    neighbours
+    |> List.fold (fun grid (tile, position) -> placeNeighboursRecursively grid tile position) gridWithNeighbours
+  placeNeighboursRecursively initialGrid firstTile initialPosition
 
 let solveA input = 
   let tileList = parseInput input
-  tileList
-  |> buildGrid
+  let tilePositions = buildGrid tileList |> Map.toList
+  let positions = 
+    tilePositions 
+    |> List.map (fun (_, gridPosition) -> gridPosition.Position)
+  let minX = positions |> List.map fst |> List.min
+  let maxX = positions |> List.map fst |> List.max
+  let minY = positions |> List.map snd |> List.min
+  let maxY = positions |> List.map snd |> List.max
+  printfn "Unique positions: %A, tiles: %A" ((List.distinct >> List.length) positions) (List.length tileList)
+  [
+    tilePositions |> List.find (fun (_, position) -> position.Position = (minX, minY));
+    tilePositions |> List.find (fun (_, position) -> position.Position = (minX, maxY));
+    tilePositions |> List.find (fun (_, position) -> position.Position = (maxX, maxY));
+    tilePositions |> List.find (fun (_, position) -> position.Position = (maxX, minY))
+  ]
+  |> List.map (fun (tile, _) -> tile.Id)
+  |> bigintProductOfInts
+
 
 let solveB input = ""
 
