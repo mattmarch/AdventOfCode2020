@@ -6,24 +6,9 @@ type Pixel = On | Off
 
 type Side = Top | Right | Bottom | Left
 
-type Edge = Side * Pixel list
-
 type Tile = {
   Id: int
   Pixels: Pixel list list
-  Edges: Edge list
-}
-
-type MatchingEdge = {
-  TileId: int
-  MatchingSide: Side
-  TileIsFlipped: bool
-}
-
-type GridPosition = {
-  Position: int * int
-  QuarterTurnsCW: int
-  Flipped: bool
 }
 
 let input = readAll "Day20.txt";
@@ -36,22 +21,15 @@ let parsePixel pixelChar =
 
 let parseTile tileString =
   let tileLines = tileString |> splitBy '\n'
-  let id =
-    match List.head tileLines with
-    | ParseRegex @"Tile (\d+):" [Integer id] -> id
-    | invalid -> failwithf "Tile missing id line, instead was %s" invalid
-  let pixels =
-    tileLines
-    |> List.tail
-    |> List.map (Seq.map parsePixel >> Seq.toList)
-  let topEdge = Top, List.head pixels
-  let bottomEdge = Bottom, pixels |> List.last |> List.rev
-  let leftEdge = Left, pixels |> List.map List.head
-  let rightEdge = Right, pixels |> List.map List.last |> List.rev
   {
-    Id = id
-    Pixels = pixels
-    Edges = [topEdge; rightEdge; bottomEdge; leftEdge]
+    Id =
+      match List.head tileLines with
+      | ParseRegex @"Tile (\d+):" [Integer id] -> id
+      | invalid -> failwithf "Tile missing id line, instead was %s" invalid
+    Pixels =
+      tileLines
+      |> List.tail
+      |> List.map (Seq.map parsePixel >> Seq.toList)
   }
 
 let parseInput input =
@@ -59,126 +37,100 @@ let parseInput input =
   |> splitByString "\n\n"
   |> List.map parseTile
 
-let findMatchingTileForEdge tileList edgePattern =
-  let reversedEdge = List.rev edgePattern
+let rotateTile90CW tile =
+  { tile with Pixels =
+                tile.Pixels
+                |> List.transpose
+                |> List.map List.rev 
+  }
+
+let flipTileXAxis tile =
+  { tile with Pixels = 
+                tile.Pixels 
+                |> List.map List.rev 
+  }
+
+let getTileEdge tile side =
+  tile.Pixels
+  |> match side with
+      | Top -> List.head
+      | Bottom -> List.last
+      | Left -> List.map List.head
+      | Right -> List.map List.last
+
+let tryMatchTile edgePattern side tile =
+  let allRotations =
+    Seq.unfold (rotateTile90CW >> duplicate >> Some) tile
+    |> Seq.take 4
+  let allRotationsAndFlips =
+    Seq.append allRotations (allRotations |> Seq.map flipTileXAxis)
+  allRotationsAndFlips
+  |> Seq.tryFind (fun transformedTile -> edgePattern = getTileEdge transformedTile side)
+
+let findMatchingTile tileList edgePattern side =
   tileList
-  |> List.tryPick (fun tile ->
-      tile.Edges
-      |> List.tryPick (fun (side, tileEdge) ->
-          if tileEdge = edgePattern then
-            Some ({TileId = tile.Id; MatchingSide = side; TileIsFlipped = false})
-          elif tileEdge = reversedEdge then
-            Some ({TileId = tile.Id; MatchingSide = side; TileIsFlipped = true})
-          else
-            None
-          )
-  )
+  |> List.tryPick (tryMatchTile edgePattern side)
 
-let findNeighbourTiles tileList tile = 
-  let otherTiles = 
-    tileList
-      |> List.filter ((<>) tile)
-  tile.Edges
-  |> List.choose (fun (side, pattern) ->
-      match findMatchingTileForEdge otherTiles pattern with
-      | Some matchingTile -> Some (side, matchingTile)
-      | None -> None
-  )
+type Neighbour = {
+  Position: int * int
+  RootSide: Side
+  NeighbourSide: Side
+}
 
-let findTileByTileId tileList tileId =
-  tileList |> List.find (fun tile -> tile.Id = tileId)
-
-let getRotation rootTileRotation rootTileSide neighbourTileSide =
-  (rootTileRotation +
-    match rootTileSide, neighbourTileSide with
-    | Top, Bottom | Right, Left | Bottom, Top | Left, Right ->
-      0
-    | Top, Right | Right, Bottom | Bottom, Left | Left, Top ->
-      1
-    | Top, Top | Right, Right | Bottom, Bottom | Left, Left ->
-      2
-    | Top, Left | Right, Top | Bottom, Right | Left, Bottom ->
-      3
-  ) % 4
-
-let rotatePosition quarterTurnsCW (posX, posY) =
-  match quarterTurnsCW with
-  | 0 -> posX, posY
-  | 1 -> posY, -posX
-  | 2 -> -posX, -posY
-  | 3 -> -posY, posX
-  | invalid -> failwithf "Expected quarterTurnsCW to be between 0 and 3, was %i" invalid
-
-let addPositions (x1, y1) (x2, y2) =
-  x1 + x2, y1 + y2
-
-let getNeighbourGridPosition rootTilePosition rootTileSide neighbourMatchingEdge =
-  let flipped = rootTilePosition.Flipped <> neighbourMatchingEdge.TileIsFlipped
-  let rotation = getRotation rootTilePosition.QuarterTurnsCW rootTileSide neighbourMatchingEdge.MatchingSide
-  let relativePositionDelta =
-    match rootTileSide with
-    | Top -> 0, 1
-    | Right -> 1, 0
-    | Bottom -> 0, -1
-    | Left -> -1, 0
-  let position = 
-    relativePositionDelta 
-    |> rotatePosition rootTilePosition.QuarterTurnsCW
-    |> addPositions rootTilePosition.Position
-  {
-    Position = position
-    QuarterTurnsCW = rotation
-    Flipped = flipped
-  }
-
-let buildGrid tileList =
+let buildGrid (tileList: Tile list) =
   let firstTile = List.head tileList
-  let initialPosition = {
-    Position = (0, 0)
-    QuarterTurnsCW = 0
-    Flipped = false
-  }
-  let initialGrid = 
-    Map.ofList [(firstTile, initialPosition)]
-  let rec placeNeighboursRecursively (grid: Map<Tile, GridPosition>) tile tilePosition =
-    let placedTiles =
-      grid
-      |> Map.toList
-      |> List.map (fun (tile, _) -> tile.Id)
-    let neighbours =
-      findNeighbourTiles tileList tile
-      |> List.filter (fun (_, matchedEdge) -> not (placedTiles |> List.contains matchedEdge.TileId))
-      |> List.map (fun (side, matchedEdge) -> 
-          (
-            findTileByTileId tileList matchedEdge.TileId,
-            getNeighbourGridPosition tilePosition side matchedEdge
-          )
-      )
+  let initialPosition = (0, 0)
+  let initialGrid = [initialPosition, firstTile] |> Map.ofList
+
+  let rec placeNeighboursOfTile currentGrid (posX, posY) =
+    let thisTile = currentGrid |> Map.find (posX, posY)
+    let placedTileIds = currentGrid |> Map.toList |> List.map (fun (_, tile) -> tile.Id)
+    let tilesStillToPlace = tileList |> List.filter (fun tile -> not(placedTileIds |> List.contains tile.Id))
+    let takenPositions = currentGrid |> Map.toList |> List.map fst
+    let neighboursToPlace =
+      [
+        { Position = (posX, posY + 1); RootSide = Top; NeighbourSide = Bottom }
+        { Position = (posX, posY - 1); RootSide = Bottom; NeighbourSide = Top }
+        { Position = (posX + 1, posY); RootSide = Right; NeighbourSide = Left }
+        { Position = (posX - 1, posY); RootSide = Left; NeighbourSide = Right }
+      ] 
+      |> List.filter (fun neighbour -> not (takenPositions |> List.contains neighbour.Position))
     let gridWithNeighbours =
-      neighbours
-      |> List.fold (fun grid (tile, position) -> grid |> Map.add tile position) grid
-    neighbours
-    |> List.fold (fun grid (tile, position) -> placeNeighboursRecursively grid tile position) gridWithNeighbours
-  placeNeighboursRecursively initialGrid firstTile initialPosition
+      neighboursToPlace
+      |> List.fold (fun grid neighbour -> 
+            match findMatchingTile tilesStillToPlace (getTileEdge thisTile neighbour.RootSide) neighbour.NeighbourSide with
+            | Some tile -> 
+                grid |> Map.add neighbour.Position tile
+            | None -> grid
+            ) currentGrid
+    neighboursToPlace
+    |> List.map (fun n -> n.Position)
+    |> List.fold (fun grid position -> 
+                    if grid |> Map.containsKey position then
+                      placeNeighboursOfTile grid position
+                    else
+                      grid
+    ) gridWithNeighbours
+  placeNeighboursOfTile initialGrid initialPosition
 
 let solveA input = 
   let tileList = parseInput input
-  let tilePositions = buildGrid tileList |> Map.toList
+  let tileGrid = buildGrid tileList
   let positions = 
-    tilePositions 
-    |> List.map (fun (_, gridPosition) -> gridPosition.Position)
+    tileGrid
+    |> Map.toList 
+    |> List.map fst
   let minX = positions |> List.map fst |> List.min
   let maxX = positions |> List.map fst |> List.max
   let minY = positions |> List.map snd |> List.min
   let maxY = positions |> List.map snd |> List.max
-  printfn "Unique positions: %A, tiles: %A" ((List.distinct >> List.length) positions) (List.length tileList)
   [
-    tilePositions |> List.find (fun (_, position) -> position.Position = (minX, minY));
-    tilePositions |> List.find (fun (_, position) -> position.Position = (minX, maxY));
-    tilePositions |> List.find (fun (_, position) -> position.Position = (maxX, maxY));
-    tilePositions |> List.find (fun (_, position) -> position.Position = (maxX, minY))
+    tileGrid |> Map.find (minX, minY);
+    tileGrid |> Map.find (minX, maxY);
+    tileGrid |> Map.find (maxX, maxY);
+    tileGrid |> Map.find (maxX, minY)
   ]
-  |> List.map (fun (tile, _) -> tile.Id)
+  |> List.map (fun tile -> tile.Id)
   |> bigintProductOfInts
 
 

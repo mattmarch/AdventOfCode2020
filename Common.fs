@@ -103,3 +103,5 @@ let tryRemovePrefix (message: string) (prefix: string) =
     Some (message.Substring(prefix.Length))
   else
     None
+
+let duplicate v = v, v
