@@ -58,13 +58,15 @@ let getTileEdge tile side =
       | Left -> List.map List.head
       | Right -> List.map List.last
 
-let tryMatchTile edgePattern side tile =
+let getAllOrientationsOfTile tile =
   let allRotations =
     Seq.unfold (rotateTile90CW >> duplicate >> Some) tile
     |> Seq.take 4
-  let allRotationsAndFlips =
-    Seq.append allRotations (allRotations |> Seq.map flipTileXAxis)
-  allRotationsAndFlips
+  Seq.append allRotations (allRotations |> Seq.map flipTileXAxis)
+
+let tryMatchTile edgePattern side tile =
+  
+  getAllOrientationsOfTile tile
   |> Seq.tryFind (fun transformedTile -> edgePattern = getTileEdge transformedTile side)
 
 let findMatchingTile tileList edgePattern side =
@@ -133,8 +135,62 @@ let solveA input =
   |> List.map (fun tile -> tile.Id)
   |> bigintProductOfInts
 
+let mergeTilesHorizontally tile1 tile2 =
+  { tile1 with Pixels = List.map2 (@) tile1.Pixels tile2.Pixels }
 
-let solveB input = ""
+let mergeTilesVertically tile1 tile2 =
+  { tile1 with Pixels = tile1.Pixels @ tile2.Pixels }
+
+let mergeTiles (tileGrid: Map<(int*int), Tile>) =
+  tileGrid
+  |> Map.toList
+  |> List.groupBy (fun ((_, posY), _) -> posY)
+  |> List.sortBy fst
+  |> List.map (snd 
+                >> (List.sortBy (fun ((posX, _), _ ) -> posX))
+                >> List.map (fun (_, tile) -> tile)
+                >> List.reduce mergeTilesHorizontally)
+  |> List.reduce mergeTilesVertically
+
+let seaMonster = [
+  "                  # "
+  "#    ##    ##    ###"
+  " #  #  #  #  #  #   "
+]
+
+let isSeaMonster seaMonster pixels =
+  seaMonster
+  |> List.indexed
+  |> List.forall (fun (y, row) ->
+                    row
+                    |> List.indexed
+                    |> List.filter (fun (_, p) -> p = On)
+                    |> List.forall (fun (x, _) -> pixels 
+                                                  |> List.item y
+                                                  |> List.item x
+                                                   = On))
+
+let countSeaMonsters seaMonster (pixels: Pixel list list) = 
+  let seaMonsterSizeX = seaMonster |> List.head |> List.length
+  let seaMonsterSizeY = seaMonster |> List.length
+  pixels
+  |> List.windowed seaMonsterSizeY
+  |> List.map (List.map (List.windowed seaMonsterSizeX) >> List.transpose)
+  |> List.collect (List.map (isSeaMonster seaMonster))
+  |> List.filter id
+  |> List.length
+
+
+let solveB input =
+  let tileList = parseInput input
+  let tileGrid = buildGrid tileList
+  let mergedGrid = mergeTiles tileGrid
+  let seaMonsterPixels =
+    seaMonster
+    |> List.map (replaceString " " "." >> Seq.map parsePixel >> Seq.toList)
+  let allOrientationsOfGrid = getAllOrientationsOfTile mergedGrid
+  allOrientationsOfGrid
+  |> Seq.map (fun tile -> countSeaMonsters seaMonsterPixels tile.Pixels)
 
 let solve = solveDay solveA solveB
 
