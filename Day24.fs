@@ -59,16 +59,73 @@ let flipTile (tileMap: Map<int*int, TileSide>) position =
       | Some Black -> Map.add position White
       | None -> Map.add position Black 
 
-let solveA input =
-  let directions =
-    input
-    |> Seq.map parseLine
+let getTileMapFromDirections directions =
   directions
   |> Seq.fold (fun tileMap tileDirections ->
                 tileDirections
                 |> followDirections 
                 |> flipTile tileMap
     ) Map.empty
+
+let solveA input =
+  let directions =
+    input
+    |> Seq.map parseLine
+  directions
+  |> getTileMapFromDirections
   |> Map.toList
   |> List.filter (snd >> (=) Black)
   |> List.length
+
+let getNeighbours (posX, posY) =
+  [
+    posX + 1, posY - 1
+    posX + 2, posY
+    posX + 1, posY + 1
+    posX - 1, posY + 1
+    posX - 2, posY
+    posX - 1, posY - 1
+  ]
+
+let getTileColour tileMap position =
+  match tileMap |> Map.tryFind position with
+  | Some Black -> Black
+  | _ -> White
+
+let countBlackNeighbours tileMap position =
+  position
+  |> getNeighbours
+  |> List.filter (getTileColour tileMap >> (=) Black)
+  |> List.length
+
+let allTilesToConsider tileMap =
+  tileMap
+  |> Map.toList
+  |> List.collect (fun (pos, _) -> pos :: getNeighbours pos)
+  |> List.distinct
+
+let getNextTileState tileMap position = 
+  match (getTileColour tileMap position), (countBlackNeighbours tileMap position) with
+  | Black, blackNeighbours when blackNeighbours = 0 || blackNeighbours > 2 ->
+      White
+  | White, 2 -> Black
+  | colour, _ -> colour
+
+let nextTileMap tileMap =
+  tileMap
+  |> allTilesToConsider
+  |> List.map (fun pos -> pos, getNextTileState tileMap pos)
+  |> Map.ofList
+
+let solveB input =
+  let initialTileMap =
+    input
+    |> Seq.map parseLine
+    |> getTileMapFromDirections
+  Seq.init 100 id
+  |> Seq.fold (fun tileMap _ -> nextTileMap tileMap) initialTileMap
+  |> Map.toList
+  |> List.filter (snd >> (=) Black)
+  |> List.length
+
+let solve input = solveDay solveA solveB input
