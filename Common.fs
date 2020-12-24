@@ -105,3 +105,6 @@ let tryRemovePrefix (message: string) (prefix: string) =
     None
 
 let duplicate v = v, v
+
+let add2d (ax, ay) (bx, by) =
+  (ax + bx), (ay + by)
