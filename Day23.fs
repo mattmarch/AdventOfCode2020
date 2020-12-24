@@ -28,11 +28,45 @@ let solveA input =
   |> List.map string
   |> joinStrings
 
+let findNextInsertionPoint cup removedCups =
+  let rec decreaseBy1 previousValue =
+    let target = (positiveModulo (previousValue - 2) 1000000) + 1
+    if removedCups |> List.contains target then
+      decreaseBy1 target
+    else
+      target
+  decreaseBy1 cup
+
+let applyMoveToMap currentCup cups =
+  let firstCup = cups |> Map.find currentCup
+  let secondCup = cups |> Map.find firstCup
+  let thirdCup = cups |> Map.find secondCup
+  let endOfRemovedCups = cups |> Map.find thirdCup
+  let insertionPoint = findNextInsertionPoint currentCup [firstCup; secondCup; thirdCup]
+  (
+    endOfRemovedCups,
+    cups 
+    |> Map.add currentCup endOfRemovedCups // close the gap
+    |> Map.add insertionPoint firstCup // start of new position
+    |> Map.add thirdCup (cups |> Map.find insertionPoint) // end of new position
+  )
+
+let applyXMovesToMap numberMoves startCup cups =
+  List.init numberMoves id
+  |> List.fold (fun (nextCup, previousCups) _ -> applyMoveToMap nextCup previousCups) (startCup, cups)
+  |> snd
+
 let solveB input =
-  let allCups = input @ (List.init 1000000 id |> List.skip 10)
-  let finalResult = applyXMoves 10000000 allCups
-  let indexOf1 = finalResult |> List.findIndex (fun cup -> cup = 1)
-  (int64 finalResult.[(indexOf1 + 1) % 1000000]) * (int64 finalResult.[(indexOf1 + 2) % 1000000])
+  let allCups = 
+    (input |> List.pairwise) 
+    @ [(List.last input, 10)] 
+    @ (List.init 1000000 (fun i -> (i, i+1)) |> List.skip 10)
+    @ [(1000000, List.head input)]
+  |> Map.ofList
+  |> applyXMovesToMap 10000000 (List.head input)
+  let firstStarCup = allCups |> Map.find 1
+  let secondStarCup = allCups |> Map.find firstStarCup
+  (int64 firstStarCup) * (int64 secondStarCup)
 
 let solve = solveDay solveA solveB
 
