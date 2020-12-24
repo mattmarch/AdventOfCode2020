@@ -141,14 +141,22 @@ let mergeTilesHorizontally tile1 tile2 =
 let mergeTilesVertically tile1 tile2 =
   { tile1 with Pixels = tile1.Pixels @ tile2.Pixels }
 
+let removeOuterPixels (pixels: Pixel list list) =
+  let sideLength = List.length pixels
+  pixels.[1..(sideLength-2)]
+  |> List.map (fun row -> row.[1..(sideLength-2)])
+
+let removeTileBorder tile =
+  { tile with Pixels = removeOuterPixels tile.Pixels }
+
 let mergeTiles (tileGrid: Map<(int*int), Tile>) =
   tileGrid
   |> Map.toList
   |> List.groupBy (fun ((_, posY), _) -> posY)
-  |> List.sortBy fst
+  |> List.sortByDescending fst
   |> List.map (snd 
                 >> (List.sortBy (fun ((posX, _), _ ) -> posX))
-                >> List.map (fun (_, tile) -> tile)
+                >> List.map (fun (_, tile) -> removeTileBorder tile)
                 >> List.reduce mergeTilesHorizontally)
   |> List.reduce mergeTilesVertically
 
@@ -180,6 +188,9 @@ let countSeaMonsters seaMonster (pixels: Pixel list list) =
   |> List.filter id
   |> List.length
 
+let countOnPixels pixels =
+  pixels
+  |> List.sumBy (List.filter ((=) On) >> List.length)
 
 let solveB input =
   let tileList = parseInput input
@@ -189,10 +200,23 @@ let solveB input =
     seaMonster
     |> List.map (replaceString " " "." >> Seq.map parsePixel >> Seq.toList)
   let allOrientationsOfGrid = getAllOrientationsOfTile mergedGrid
-  allOrientationsOfGrid
-  |> Seq.map (fun tile -> countSeaMonsters seaMonsterPixels tile.Pixels)
+  let seaMonsterCount =
+    allOrientationsOfGrid
+    |> Seq.map (fun tile -> countSeaMonsters seaMonsterPixels tile.Pixels)
+    |> Seq.max
+  (countOnPixels mergedGrid.Pixels) - seaMonsterCount * (countOnPixels seaMonsterPixels) 
 
 let solve = solveDay solveA solveB
+
+let printPixels pixels =
+  pixels
+  |> List.map (
+      List.map (fun p -> 
+        match p with
+        | On -> '#'
+        | Off -> '.')
+      >> joinChars)
+  |> List.iter (printfn "%s")
 
 let testInput =
   "Tile 2311:
